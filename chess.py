@@ -15,6 +15,7 @@ half_italic_path="Bodoni_Moda\\half.ttf"
 medium_italic_path="Bodoni_Moda\\medium_italic.ttf"
 board_origin=(0,0)
 square_size=75
+print("hi")
 LIGHT_SQUARE = (237, 240, 209)
 HIGHLIGHT_COLOR_BLACK=(185, 212, 73)
 HIGHLIGHT_COLOR_WHITE=(244, 253, 134)
