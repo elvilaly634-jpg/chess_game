@@ -317,8 +317,11 @@ def get_legal_mouves(piece,start_row,start_col,turn,checking):
     start_postion=start_row*8+start_col
     blocked_pawn_right=False
     blocked_pawn_left=False
+    white_start_row=6
+    black_start_row=1
     if turn:
         value=-1
+        
         team_peaces=white_peaces_board
         peacess=black_peaces_board
         king_mouved=white_king_mouved
@@ -334,6 +337,8 @@ def get_legal_mouves(piece,start_row,start_col,turn,checking):
     blocked=False
     if game_state=="playing_online" and not assinged_turn:
         value*=-1
+        black_start_row=7-black_start_row
+        white_start_row=7-white_start_row
     if piece=="p":
         
         
@@ -393,7 +398,10 @@ def get_legal_mouves(piece,start_row,start_col,turn,checking):
         if not blocked:
         
             legal_mouve.append([start_col,start_row+value])
-            legal_mouve.append([start_col,start_row+value*2])
+            str_roow=white_start_row if turn else black_start_row
+
+            if not double_mouve_block and start_row==str_roow:
+                legal_mouve.append([start_col,start_row+value*2])
                     
             
     elif piece=="kn":
