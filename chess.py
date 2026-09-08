@@ -95,6 +95,7 @@ black_queen_board=0
 white_peaces_board=0
 black_peaces_board=0
 starting=True
+waiting_for_pos=False
 start_row=0
 start_col=0
 ready=True
@@ -284,6 +285,19 @@ def is_king_checked(turn):
             break
     return is_square_attacked(king_row,king_col,turn)
     
+
+def receive_position():
+    global start_square,end_square
+    global white_turn
+    request=chess_client.recv()
+    request=ast.literal_eval(request)
+    start_square=request[0]
+    end_square=request[1]
+    moove_piece(request[0][1],request[0][0],request[1][1],request[1][0])
+    
+    print(request)
+
+
 
 def get_legal_mouves(piece,start_row,start_col,turn,checking):
     global white_peaces_board,black_peaces_board
@@ -1124,7 +1138,7 @@ def moove_piece(start_row,start_col,end_row,end_col):
                 played=True
     else:("can't take you'r own peace")
 
-    if played and game_state=="playing_online":
+    if played and game_state=="playing_online" and white_turn!= assinged_turn:
         chess_client.send("sending_mouve")
         confirmation=chess_client.recv()
         chess_client.send([start_col,start_row])
@@ -1562,13 +1576,10 @@ while True:
                     assinged_turn=bool(int(assinged_turn))
                     print(assinged_turn)
                     can_play=True
+                    waiting_for_pos=True
 
 
-            if   white_turn==assinged_turn and game_state=="playing_online":
-                can_play=True
-            elif   white_turn!=assinged_turn and game_state=="playing_online":
-                can_play=False
-                threading.Thread(target=chess_client.receive_position).start()
+            
             if can_play:
                 if promoting:
                     for ind,promote_rect in enumerate(promote_rects):
@@ -1611,7 +1622,22 @@ while True:
                 elif event.key==pygame.K_ESCAPE:
                     game_state="main_menue"
 
-            
+
+
+
+    if   white_turn==assinged_turn and game_state=="playing_online":
+        can_play=True
+        waiting_for_pos=True
+    elif   white_turn!=assinged_turn and game_state=="playing_online":
+        can_play=False
+                
+                
+        if  waiting_for_pos:
+            print("waiting")
+            get_value=threading.Thread(target=receive_position)
+            get_value.daemon=True
+            get_value.start()
+            waiting_for_pos=False
 
     if game_state=="playing_offline" or game_state=="playing_online":
         row, col = hovered_square()

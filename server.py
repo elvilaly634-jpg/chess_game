@@ -1,5 +1,6 @@
 import socket,threading
 import ast
+from random import randint
 ip_addres=socket.gethostbyname(socket.gethostname())
 port=20114
 
@@ -9,6 +10,8 @@ session_member=0
 server=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
 server.bind((ip_addres,port))
 mouves=[]
+firs_player=None
+seconde_player=None
 clients_sessions=[]
 sessions=[]
 def send(conn,msg):
@@ -28,6 +31,7 @@ def recv(conn):
 def start():
     global session_number,session_member
     global sessions,clients_sessions
+    global firs_player,seconde_player
     server.listen()
     print("server listening")
 
@@ -35,10 +39,12 @@ def start():
         conn,add=server.accept()
 
         if len(sessions)==0:
-            sessions.append([])
+            sessions.append([[]])
             clients_sessions.append([conn])
             conf=recv(conn)
-            send(conn,session_member)
+            firs_player=randint(0,1)
+            
+            send(conn,firs_player)
             threading.Thread(target=handle,args=(conn,add,session_number,session_member)).start()
             session_member=1
         else:
@@ -46,24 +52,31 @@ def start():
                 if len(session)==1:
                     session_number=index
                     session_member=1
+                    seconde_player=int(not bool(firs_player))
+                    turn=seconde_player
                     print("one")
                     break
                 elif len(session)==0:
                     session_number=index
                     session_member=0
                     print("none")
+                    firs_player=randint(0,1)
+                    turn=firs_player
                     break
                 if index==len(sessions)-1 and len(session)!=2:
                     sessions.append([])
                     session_member=0
                     session_number=index
+                    firs_player=randint(0,1)
+                    turn=firs_player
                     print("new_session")
             
             sessions[session_number].append([])
             clients_sessions[session_number].append(conn)
             print(session_member)
             conf=recv(conn)
-            send(conn,session_member)
+            print(turn)
+            send(conn,turn)
             threading.Thread(target=handle,args=(conn,add,session_number,session_member)).start()
         print(f"new connection from ({add})")
 
@@ -83,12 +96,11 @@ def handle(conn,add,session_index,index_in_session):
             send(conn,"ok")
             end_pos=recv(conn)   
             end_pos=ast.literal_eval(end_pos)     
-            try:
-                sessions[session_index][index_in_session]=[start_pos,end_pos]
-            except :
-                sessions[session_index].append([start_pos,end_pos])
+            
+            sessions[session_index][index_in_session]=[start_pos,end_pos]
+            
             print(sessions)
-            send(clients_sessions[session_number][enemy_index],[start_pos,end_pos])
+            send(clients_sessions[session_number][enemy_index],f"{[start_pos,end_pos]}")
             
     conn.close()
 
