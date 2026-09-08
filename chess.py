@@ -319,6 +319,7 @@ def get_legal_mouves(piece,start_row,start_col,turn,checking):
     blocked_pawn_left=False
     white_start_row=6
     black_start_row=1
+    taking_multi=1
     if turn:
         value=-1
         
@@ -335,10 +336,20 @@ def get_legal_mouves(piece,start_row,start_col,turn,checking):
         team_peaces=black_peaces_board
         king_mouved=black_king_mouved
     blocked=False
+    king_castle_positions=[[6,7],[6,0],[2,7],[2,0]]
+    rook_l=rook_left
+    rook_r=rook_right
     if game_state=="playing_online" and not assinged_turn:
         value*=-1
         black_start_row=7-black_start_row
         white_start_row=7-white_start_row
+        rook_l=rook_right
+        rook_r=rook_left
+        taking_multi=-1
+        for i in range(len(king_castle_positions)):
+            king_castle_positions[i][0]=7-king_castle_positions[i][0]
+            king_castle_positions[i][1]=7-king_castle_positions[i][1]
+        
     if piece=="p":
         
         
@@ -809,16 +820,18 @@ def get_legal_mouves(piece,start_row,start_col,turn,checking):
             
             if checking:
                 if not is_king_checked(turn):
-                    if not rook_right:
-                        if not team_peaces&(1<<(start_row*8+(start_col+1))) and not team_peaces&(1<<(start_row*8+(start_col+2))):
-                            if not is_square_attacked(start_row,start_col-1,turn) and not is_square_attacked(start_row,start_col-2,turn):
-                                if turn:legal_mouve.append([6,7])
-                                else:legal_mouve.append([6,0])
-                    if not rook_left:
-                        if not team_peaces&(1<<(start_row*8+(start_col-1))) and not team_peaces&(1<<(start_row*8+(start_col-2))) :
-                            if not is_square_attacked(start_row,start_col-1,turn) and not is_square_attacked(start_row,start_col-2,turn):
-                                if turn:legal_mouve.append([2,7])
-                                else:legal_mouve.append([2,0])
+                    if not rook_r:
+                        if not team_peaces&(1<<(start_row*8+(start_col+1*taking_multi))) and not team_peaces&(1<<(start_row*8+(start_col+2*taking_multi))):
+                            if not is_square_attacked(start_row,start_col+1*taking_multi,turn) and not is_square_attacked(start_row,start_col+2*taking_multi,turn):
+                                if turn:legal_mouve.append(king_castle_positions[0])
+                                else:legal_mouve.append(king_castle_positions[1])
+                    if not rook_l:
+                        if not team_peaces&(1<<(start_row*8+(start_col-1*taking_multi))) and not team_peaces&(1<<(start_row*8+(start_col-2*taking_multi))) :
+                            if not is_square_attacked(start_row,start_col-1*taking_multi,turn) and not is_square_attacked(start_row,start_col-2*taking_multi,turn):
+                                if turn:legal_mouve.append(king_castle_positions[2])
+                                else:legal_mouve.append(king_castle_positions[3])
+
+                print(legal_mouve)
 
     if checking:
   
@@ -952,39 +965,40 @@ def update_boards(reverse):
         black_queen_board=boards[10]
         black_king_board=boards[11]
 
-def castle(end_row,end_col,turn):
+def castle(start_col,start_row,end_row,end_col,turn):
     global black_king_mouved,white_king_mouved
     global white_rook_board,black_rook_board
     global white_king_board,black_king_board
     if turn:white_king_mouved=True
     else:black_king_mouved=True
 
-    if end_col==6:
-        if turn:
-            start_row=7
-            white_king_board&=~(1<<((start_row*8)+4))
-            white_king_board|=(1<<((end_row*8)+end_col))
-            white_rook_board&=~(1<<(start_row*8+7))
-            white_rook_board|=(1<<(start_row*8+5))
+    
+    if turn:
+        
+        if end_col>4:
+            rook_position=end_col-1
+            rook_start_position=7
         else:
-            start_row=0
-            black_king_board&=~(1<<((start_row*8)+4))
-            black_king_board|=(1<<((end_row*8)+end_col))
-            black_rook_board&=~(1<<(start_row*8+7))
-            black_rook_board|=(1<<(start_row*8+5))
-    elif end_col==2:
-            if turn:
-                start_row=7
-                white_king_board&=~(1<<((start_row*8)+4))
-                white_king_board|=(1<<((end_row*8)+end_col))
-                white_rook_board&=~(1<<(start_row*8))
-                white_rook_board|=(1<<(start_row*8+3))
-            else:
-                start_row=0
-                black_king_board&=~(1<<((start_row*8)+4))
-                black_king_board|=(1<<((end_row*8)+end_col))
-                black_rook_board&=~(1<<(start_row*8))
-                black_rook_board|=(1<<(start_row*8+3))
+            rook_start_position=0
+            rook_position=end_col+1
+        white_king_board&=~(1<<((start_row*8)+start_col))
+        white_king_board|=(1<<((end_row*8)+end_col))
+        white_rook_board&=~(1<<(start_row*8+rook_start_position))
+        white_rook_board|=(1<<(start_row*8+rook_position))
+    else:
+        
+        if end_col>4:
+            rook_position=end_col-1
+            rook_start_position=7
+        else:
+            rook_start_position=0
+            rook_position=end_col+1
+        black_king_board&=~(1<<((start_row*8)+start_col))
+        black_king_board|=(1<<((end_row*8)+end_col))
+        black_rook_board&=~(1<<(start_row*8+rook_start_position))
+        black_rook_board|=(1<<(start_row*8+rook_position))
+    
+        
 
 def moove_piece(start_row,start_col,end_row,end_col):
     global white_pawn_board, black_pawn_board
@@ -1045,10 +1059,14 @@ def moove_piece(start_row,start_col,end_row,end_col):
 
     str_row=6
     ed_row=4
+    king_castle_positions=[[6,7],[6,0],[2,7],[2,0]]
     if game_state=="playing_online" and not assinged_turn:
         str_row=7-str_row
         ed_row=7-ed_row
         val*=-1
+        for i in range(len(king_castle_positions)):
+            king_castle_positions[i][0]=7-king_castle_positions[i][0]
+            king_castle_positions[i][1]=7-king_castle_positions[i][1]
     if (not board&(1<<end_position)) and board&(1<<position):
 
 
@@ -1130,10 +1148,12 @@ def moove_piece(start_row,start_col,end_row,end_col):
             legal_mouves=get_legal_mouves(piece,start_row,start_col,white_turn,True)
             
             row_col=[end_col,end_row]
-            
+            print(f"king castle positions: {king_castle_positions}")
+            print(f"legal mouves: {legal_mouves}")
+            print(f"row_col: {row_col}")
             if row_col in legal_mouves:
-                if( row_col==[6,7] or row_col==[6,0] or row_col==[2,7] or row_col==[2,0]) and not castledd and (not rook_rightt or not rook_leftt) and not king_mouvedd:
-                    castle(row_col[1],row_col[0],white_turn)
+                if row_col in king_castle_positions and not castledd and (not rook_rightt or not rook_leftt) and not king_mouvedd:
+                    castle(start_col,start_row,end_row,end_col,white_turn)
                     castled=True
                     if white_turn:white_king_mouved=True
                     else:black_king_mouved=True
@@ -1708,7 +1728,7 @@ while True:
                 
                 
         if  waiting_for_pos:
-            print("waiting")
+            
             get_value=threading.Thread(target=receive_position)
             get_value.daemon=True
             get_value.start()
@@ -1769,5 +1789,5 @@ while True:
         draw_menue()
     
     pygame.display.update()
-    clock.tick(20)
+    clock.tick(60)
 
