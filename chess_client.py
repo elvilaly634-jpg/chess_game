@@ -1,6 +1,6 @@
 import socket
 import threading,ast
-ip_address="192.168.1.16"
+ip_address=socket.gethostbyname(socket.gethostname())
 port=20114
 format="utf-8"
 

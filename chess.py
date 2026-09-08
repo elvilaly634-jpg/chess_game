@@ -15,7 +15,7 @@ half_italic_path="Bodoni_Moda\\half.ttf"
 medium_italic_path="Bodoni_Moda\\medium_italic.ttf"
 board_origin=(0,0)
 square_size=75
-print("hi")
+stalemate=False
 LIGHT_SQUARE = (237, 240, 209)
 HIGHLIGHT_COLOR_BLACK=(185, 212, 73)
 HIGHLIGHT_COLOR_WHITE=(244, 253, 134)
@@ -123,6 +123,7 @@ assinged_turn=None
 promote_rects=[]
 promote_position=[]
 game_state="main_menue"
+checkmate=False
 availble_taking_rects=[]
 text_width,tex_height=medium_italic_font_small.size("Play Online")
 online_rect=pygame.Rect(0,0,text_width+15,tex_height+8)
@@ -291,11 +292,17 @@ def receive_position():
     global white_turn
     request=chess_client.recv()
     request=ast.literal_eval(request)
+    request[0][1]=7-request[0][1]
+    request[1][1]=7-request[1][1]
+    request[0][0]=7-request[0][0]
+    request[1][0]=7-request[1][0]
+    print(f"received mouve :{request}")
     start_square=request[0]
     end_square=request[1]
+    
     moove_piece(request[0][1],request[0][0],request[1][1],request[1][0])
     
-    print(request)
+    
 
 
 
@@ -308,43 +315,53 @@ def get_legal_mouves(piece,start_row,start_col,turn,checking):
     legal_mouve=[]
     num=None
     start_postion=start_row*8+start_col
-
+    blocked_pawn_right=False
+    blocked_pawn_left=False
     if turn:
+        value=-1
         team_peaces=white_peaces_board
         peacess=black_peaces_board
         king_mouved=white_king_mouved
         rook_right=white_rook_right
         rook_left=white_rook_left
     else:
+        value=1
         rook_right=black_rook_right
         rook_left=black_rook_left
         peacess=white_peaces_board
         team_peaces=black_peaces_board
         king_mouved=black_king_mouved
     blocked=False
+    if game_state=="playing_online" and not assinged_turn:
+        value*=-1
     if piece=="p":
         
-        value=-1
+        
         if turn:
             num=0
-            value=-1
-            taking_right_col=start_col+1
-            taking_right_row=start_row-1
-            taking_left_col=start_col-1
-            taking_left_row=start_row-1
             
-            taking_right=taking_right_row*8+taking_right_col
-            taking_left=taking_left_row*8+taking_left_col
+            
+            taking_right_col=start_col+1
+            taking_right_row=start_row+value
+            taking_left_col=start_col-1
+            taking_left_row=start_row+value
+            if 0<=taking_right_col<8 and 0<=taking_right_row<8 :taking_right=taking_right_row*8+taking_right_col
+            else: blocked_pawn_right=True
+            if 0<=taking_left_col<8 and 0<=taking_left_row<8 :taking_left=taking_left_row*8+taking_left_col
+            else:blocked_pawn_left=True
             
         else:
-            value=1
+            
             num=6
             taking_right_col=start_col+1
-            taking_right_row=start_row+1
+            taking_right_row=start_row+value
             taking_left_col=start_col-1
-            taking_left_row=start_row+1
-            taking_right=taking_right_row*8+taking_right_col
-            taking_left=taking_left_row*8+taking_left_col
+            taking_left_row=start_row+value
+            if 0<=taking_right_col<8 and 0<=taking_right_row<8 :taking_right=taking_right_row*8+taking_right_col
+            else: blocked_pawn_right=True
+            if 0<=taking_left_col<8 and 0<=taking_left_row<8 :taking_left=taking_left_row*8+taking_left_col
+            else:blocked_pawn_left=True
+
         double_mouve_block=False
         for indexx,board in enumerate(boards):
             if  0<=start_row+value<8:
@@ -355,12 +372,16 @@ def get_legal_mouves(piece,start_row,start_col,turn,checking):
                     double_mouve_block=True
             if checking:
                 if turn and indexx>5:
-                    if black_peaces_board&(1<<taking_right) or for_white_passent_board&(1<<taking_right):legal_mouve.append([taking_right_col,taking_right_row])
-                    if black_peaces_board&(1<<taking_left) or for_white_passent_board&(1<<taking_left):legal_mouve.append([taking_left_col,taking_left_row])
+                    if not blocked_pawn_right:
+                        if black_peaces_board&(1<<taking_right) or for_white_passent_board&(1<<taking_right):legal_mouve.append([taking_right_col,taking_right_row])
+                    if not blocked_pawn_left:
+                        if black_peaces_board&(1<<taking_left) or for_white_passent_board&(1<<taking_left):legal_mouve.append([taking_left_col,taking_left_row])
                     
                 elif not turn and indexx<6:
-                    if white_peaces_board&(1<<taking_right) or for_black_passent_board&(1<<taking_right):legal_mouve.append([taking_right_col,taking_right_row])
-                    if white_peaces_board&(1<<taking_left) or for_black_passent_board&(1<<taking_left):legal_mouve.append([taking_left_col,taking_left_row])
+                    if not blocked_pawn_right:
+                        if white_peaces_board&(1<<taking_right) or for_black_passent_board&(1<<taking_right):legal_mouve.append([taking_right_col,taking_right_row])
+                    if not blocked_pawn_left:
+                        if white_peaces_board&(1<<taking_left) or for_black_passent_board&(1<<taking_left):legal_mouve.append([taking_left_col,taking_left_row])
                 
             else:
                 
@@ -370,19 +391,11 @@ def get_legal_mouves(piece,start_row,start_col,turn,checking):
         
             
         if not blocked:
-            if turn and start_row==6 and not double_mouve_block:
-                legal_mouve.append([start_col,start_row-1])
-                legal_mouve.append([start_col,start_row-2])
+        
+            legal_mouve.append([start_col,start_row+value])
+            legal_mouve.append([start_col,start_row+value*2])
                     
-            elif turn:
-                legal_mouve.append([start_col,start_row-1])
-                
-            elif not turn and start_row==1 and not double_mouve_block:
-                legal_mouve.append([start_col,start_row+1])
-                legal_mouve.append([start_col,start_row+2])
-                    
-            elif not turn:
-                legal_mouve.append([start_col,start_row+1])
+            
     elif piece=="kn":
         mouves=[]
 
@@ -984,7 +997,8 @@ def moove_piece(start_row,start_col,end_row,end_col):
     global gave_passent_black,start_square
     global end_square,game_mouves
     global current_position_index,promoting
-    global promote_position
+    global promote_position,checkmate
+    global stalemate
     end_square
     played=False
     position=start_row*8+start_col
@@ -1004,7 +1018,7 @@ def moove_piece(start_row,start_col,end_row,end_col):
     if white_turn:
         castledd=white_castled
         king_mouvedd=white_king_mouved
-
+        val=1
         board=white_peaces_board
         if gave_passent_white:gave_passent_white=False
         taken_board=black_peaces_board
@@ -1014,11 +1028,19 @@ def moove_piece(start_row,start_col,end_row,end_col):
         castledd=black_castled
         king_mouvedd=black_king_mouved
         rook_rightt=black_rook_right
+        val=-1
         rook_leftt=black_rook_left
         if gave_passent_black==True:
             gave_passent_black=False
         board=black_peaces_board
         taken_board=white_peaces_board
+
+    str_row=6
+    ed_row=4
+    if game_state=="playing_online" and not assinged_turn:
+        str_row=7-str_row
+        ed_row=7-ed_row
+        val*=-1
     if (not board&(1<<end_position)) and board&(1<<position):
 
 
@@ -1027,14 +1049,19 @@ def moove_piece(start_row,start_col,end_row,end_col):
             
             row_col=[end_col,end_row]
             if row_col in legal_mouves:
-                if white_turn and end_row==4 and start_row==6:
-                    en_passent_mouves_for_black.append([end_col,end_row+1])
+
+
+                if white_turn and end_row==ed_row and start_row==str_row:
+                    
+                    en_passent_mouves_for_black.append([end_col,end_row+val])
                     gave_passent_black=True
-                    for_black_passent_board|=(1<<(end_row+1)*8+end_col)
-                elif not white_turn and row_col[1]==3 and start_row==1:
+                    
+                    for_black_passent_board|=(1<<(end_row+val)*8+end_col)
+                elif not white_turn and end_row==7-ed_row and start_row==7-str_row:
                     gave_passent_white=True
-                    for_white_passent_board|=(1<<(end_row-1)*8+end_col)
-                    en_passent_mouves_for_white.append([end_col,end_row-1])
+                    print(f"given: [{end_col},{end_row+val}]")
+                    for_white_passent_board|=(1<<(end_row+val)*8+end_col)
+                    en_passent_mouves_for_white.append([end_col,end_row+val])
                     
                 
                 if white_turn:
@@ -1146,21 +1173,22 @@ def moove_piece(start_row,start_col,end_row,end_col):
         chess_client.send([end_col,end_row])
     
 
-    update_boards(False)
+    
 
     if white_turn:
         black_castled=castledd
         if for_black_passent_board&(1<<end_position):
             for_black_passent_board&=~(1<<end_position)
-            white_pawn_board&=~(1<<((end_row-1)*8+end_col))
+            white_pawn_board&=~(1<<((end_row+val)*8+end_col))
         
 
     else:
         if for_white_passent_board&(1<<end_position):
-            black_pawn_board&=~(1<<((end_row+1)*8+end_col))
+            black_pawn_board&=~(1<<((end_row+val)*8+end_col))
+            print("should_take")
             for_white_passent_board&=~(1<<end_position)
         white_castled=castledd
-        
+    update_boards(False)
     if played and (end_row==0 or end_row==7) and piece=="p":
         promoting=True
         promote_position=[end_col,end_row]
@@ -1240,7 +1268,8 @@ def moove_piece(start_row,start_col,end_row,end_col):
         
     else:
         start_square=[]
-    
+    checkmate=is_checkmated(white_turn)
+    stalemate=is_stalemate(white_turn)
     
     pieces=boards[0]|boards[1]|boards[2]|boards[3]|boards[4]|boards[5]|boards[6]|boards[7]|boards[8]|boards[9]|boards[10]|boards[11]
 def spawn_peaces():
@@ -1253,18 +1282,22 @@ def spawn_peaces():
     global white_peaces_board, black_peaces_board
     global boards, pieces,game_mouves
     global current_position_index
-    
-
+    placement_row=6
+    if game_state=="playing_online" and not assinged_turn:
+        placement_row=1
+    print(placement_row)
     for colu in range(8):
-        row = 6
-        position = row * 8 + colu
+        
+        position = placement_row * 8 + colu
         white_pawn_board |= 1 << position
         
 
-        row = 1
-        position = row * 8 + colu
+        placement_row = 7-placement_row
+        
+        position = placement_row * 8 + colu
         black_pawn_board |= 1 << position
-
+        placement_row=7-placement_row
+    placement_row=0
     white_back_rank = [
         rook_white, knight_white, bishop_white, queen_white,
         king_white, bishop_white, knight_white, rook_white
@@ -1273,42 +1306,52 @@ def spawn_peaces():
         rook_black, knight_black, bishop_black, queen_black,
         king_black, bishop_black, knight_black, rook_black
     ]
+    if game_state=="playing_online" and not assinged_turn:
+        placement_row=7
+        holder=black_back_rank[4]
+        black_back_rank[4]=black_back_rank[3]
+        black_back_rank[3]=holder
+        holder=white_back_rank[4]
+        white_back_rank[4]=white_back_rank[3]
+        white_back_rank[3]=holder
+    
     for colu,piece in enumerate(black_back_rank):
-        row=0
+        
         if piece==rook_black:
-            position=row*8+colu
+            position=placement_row*8+colu
             black_rook_board|=1<<position
         elif piece==knight_black:
-            position=row*8+colu
+            position=placement_row*8+colu
             black_knight_board|=1<<position
         elif piece==bishop_black:
-            position=row*8+colu
+            position=placement_row*8+colu
             black_bishop_board|=1<<position
         elif piece==king_black:
-            position=row*8+colu
+            position=placement_row*8+colu
             black_king_board|=1<<position
         elif piece==queen_black:
-            position=row*8+colu
+            position=placement_row*8+colu
             black_queen_board|=1<<position
+    placement_row=7-placement_row
     for colu,piece in enumerate(white_back_rank):
-        row=7
+        
         
 
 
         if piece==rook_white:
-            position=row*8+colu
+            position=placement_row*8+colu
             white_rook_board|=1<<position
         elif piece==knight_white:
-            position=row*8+colu
+            position=placement_row*8+colu
             white_knight_board|=1<<position
         elif piece==bishop_white:
-            position=row*8+colu
+            position=placement_row*8+colu
             white_bishop_board|=1<<position
         elif piece==king_white:
-            position=row*8+colu
+            position=placement_row*8+colu
             white_king_board|=1<<position
         elif piece==queen_white:
-            position=row*8+colu
+            position=placement_row*8+colu
             white_queen_board|=1<<position
     white_peaces_board=white_pawn_board|white_bishop_board|white_rook_board|white_knight_board|white_king_board|white_queen_board
     black_peaces_board=black_pawn_board|black_bishop_board|black_rook_board|black_knight_board|black_king_board|black_queen_board
@@ -1336,14 +1379,14 @@ def is_checkmated(turn):
             if piece_index !=None:
                 if piece_index<6 and turn:
                     legal_mouve=get_legal_mouves(get_piece_at(i)[0],i//8,i%8,turn,True)
-                    print(legal_mouve)
+                    
                     if len(legal_mouve)>0:
 
                         mate=False
                         return mate
                 elif piece_index>5 and not turn:
                     legal_mouve=get_legal_mouves(get_piece_at(i)[0],i//8,i%8,turn,True)
-                    print(legal_mouve)
+                    
                     if len(legal_mouve)>0:
 
                         mate=False
@@ -1448,24 +1491,45 @@ def render():
             if x==7:
                 white=not white
     white=False
-    for i in range(8):
-        if white:
-            text_color=DARK_SQUARE
-            
-        else:
-            text_color=LIGHT_SQUARE
-        white=not white
-        letter=small_font.render(letters[i],True,text_color)
-        letter_rect=letter.get_rect(center=(68+75*i,75*8-10))
-        screen.blit(letter,letter_rect)
-    white=False
-    for i in range(7,-1,-1):
-        if white:text_color=DARK_SQUARE
-        else:text_color=LIGHT_SQUARE
-        white=not white
-        number=small_font.render(f"{8-i}",True,text_color)
-        number_rect=number.get_rect(center=(5,75*i+10))
-        screen.blit(number,number_rect)
+    if game_state=="playing_offline":
+        for i in range(8):
+            if white:
+                text_color=DARK_SQUARE
+                
+            else:
+                text_color=LIGHT_SQUARE
+            white=not white
+            letter=small_font.render(letters[i],True,text_color)
+            letter_rect=letter.get_rect(center=(68+75*i,75*8-10))
+            screen.blit(letter,letter_rect)
+        white=False
+        for i in range(7,-1,-1):
+            if white:text_color=DARK_SQUARE
+            else:text_color=LIGHT_SQUARE
+            white=not white
+            number=small_font.render(f"{8-i}",True,text_color)
+            number_rect=number.get_rect(center=(5,75*i+10))
+            screen.blit(number,number_rect)
+    elif game_state=="playing_online" and not assinged_turn:
+        for i in range(8):
+            if white:
+                text_color=DARK_SQUARE
+                
+            else:
+                text_color=LIGHT_SQUARE
+            white=not white
+            letter=small_font.render(letters[7-i],True,text_color)
+            letter_rect=letter.get_rect(center=(68+75*i,75*8-10))
+            screen.blit(letter,letter_rect)
+        white=False
+        for i in range(7,-1,-1):
+            if white:text_color=DARK_SQUARE
+            else:text_color=LIGHT_SQUARE
+            white=not white
+            number=small_font.render(f"{i+1}",True,text_color)
+            number_rect=number.get_rect(center=(5,75*i+10))
+            screen.blit(number,number_rect)
+
     for board in boards:
         
         for pos in range(64):
@@ -1551,8 +1615,7 @@ def draw_menue():
     screen.blit(game_name,game_name_rect)
 screen.fill(BOARD_BG)
 can_play=False
-spawn_board()
-spawn_peaces()
+
 while True:
     
     for event in pygame.event.get():
@@ -1566,6 +1629,8 @@ while True:
                 
                 if offline_rect.collidepoint(mouse_pos):
                     game_state="playing_offline"
+                    spawn_board()
+                    spawn_peaces()
                     can_play=True
                 elif online_rect.collidepoint(mouse_pos):
                     game_state="playing_online"
@@ -1577,6 +1642,8 @@ while True:
                     print(assinged_turn)
                     can_play=True
                     waiting_for_pos=True
+                    spawn_board()
+                    spawn_peaces()
 
 
             
@@ -1680,12 +1747,12 @@ while True:
             screen.blit(queen,queen_rect)
             screen.blit(rook,rook_rect)
             screen.blit(knight,knight_rect)
-        if is_checkmated(white_turn):
+        if checkmate:
             game_over_text="Black won" if white_turn else "White won"
             render_text=font.render(game_over_text,True,"black" if not white_turn else "white")
             screen.blit(render_text,(75*8+20,75*4))
             print("black won" if white_turn else "white won")
-        elif is_stalemate(white_turn):
+        elif stalemate:
             game_over_text="stalemate" 
             render_text=font.render(game_over_text,True,"black" if not white_turn else "white")
             screen.blit(render_text,(75*8+20,75*4))
@@ -1694,5 +1761,5 @@ while True:
         draw_menue()
     
     pygame.display.update()
-    clock.tick(60)
+    clock.tick(20)
 

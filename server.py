@@ -39,45 +39,42 @@ def start():
         conn,add=server.accept()
 
         if len(sessions)==0:
-            sessions.append([[]])
-            clients_sessions.append([conn])
-            conf=recv(conn)
-            firs_player=randint(0,1)
+            sessions.append([])
+            clients_sessions.append([])
             
-            send(conn,firs_player)
-            threading.Thread(target=handle,args=(conn,add,session_number,session_member)).start()
-            session_member=1
-        else:
-            for index,session in enumerate(sessions):
-                if len(session)==1:
-                    session_number=index
-                    session_member=1
-                    seconde_player=int(not bool(firs_player))
-                    turn=seconde_player
-                    print("one")
-                    break
-                elif len(session)==0:
-                    session_number=index
-                    session_member=0
-                    print("none")
-                    firs_player=randint(0,1)
-                    turn=firs_player
-                    break
-                if index==len(sessions)-1 and len(session)!=2:
-                    sessions.append([])
-                    session_member=0
-                    session_number=index
-                    firs_player=randint(0,1)
-                    turn=firs_player
-                    print("new_session")
+        
+        for index,session in enumerate(sessions):
+           if len(session)==1:
+               session_number=index
+               session_member=1
+               seconde_player=int(not bool(firs_player))
+               turn=seconde_player
+               print("one")
+               break
+           elif len(session)==0:
+               session_number=index
+               session_member=0
+               print("none")
+               print(index)
+               firs_player=randint(0,1)
+               turn=firs_player
+               break
+           if index==len(sessions)-1 and len(session)==2:
+               sessions.append([])
+               clients_sessions.append([])
+               session_member=0
+               session_number=index
+               firs_player=randint(0,1)
+               turn=firs_player
+               print("new_session")
             
-            sessions[session_number].append([])
-            clients_sessions[session_number].append(conn)
-            print(session_member)
-            conf=recv(conn)
-            print(turn)
-            send(conn,turn)
-            threading.Thread(target=handle,args=(conn,add,session_number,session_member)).start()
+        sessions[session_number].append([])
+        clients_sessions[session_number].append(conn)
+        print(session_member)
+        conf=recv(conn)
+        
+        send(conn,turn)
+        threading.Thread(target=handle,args=(conn,add,session_number,session_member)).start()
         print(f"new connection from ({add})")
 
 def handle(conn,add,session_index,index_in_session):
