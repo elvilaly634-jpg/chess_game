@@ -63,7 +63,7 @@ rects=[[None]*8 for _ in range(8)]
 white_pawn_board=0
 black_pawn_board=0
 font=pygame.font.Font(italic_path,30)
-small_font=pygame.font.Font(None,25)
+small_font=pygame.font.Font(None,24)
 half_italic_font_big=pygame.font.Font(half_italic_path,90)
 half_italic_font_medium=pygame.font.Font(half_italic_path,40)
 half_italic_font_small=pygame.font.Font(half_italic_path,30)
@@ -132,6 +132,19 @@ text_width,tex_height=medium_italic_font_small.size("Play Online")
 online_rect=pygame.Rect(0,0,text_width+15,tex_height+8)
 text_width,tex_height=medium_italic_font_small.size("Play Offline")
 offline_rect=pygame.Rect(0,0,text_width+15,tex_height+8)
+white_percentage=2
+black_percentage=100-white_percentage
+white_advantage=(white_percentage/100)*(square_size*8)
+black_advantage=(black_percentage/100)*(square_size*8)
+evaluation_white=pygame.surface.Surface((board_origin[0],white_advantage))
+evaluation_white_rect=evaluation_white.get_rect(topleft=(0,board_origin[1]))
+
+evaluation_black=pygame.surface.Surface((board_origin[0],black_advantage))
+evaluation_balck_rect=evaluation_black.get_rect(topleft=(0,board_origin[1]+white_advantage))
+
+
+evaluation_white.fill((224,223,223))
+evaluation_black.fill((64,61,57))
 boards=[white_pawn_board, white_knight_board, white_bishop_board, white_rook_board, white_queen_board, white_king_board,
         black_pawn_board, black_knight_board, black_bishop_board, black_rook_board, black_queen_board, black_king_board]
 
@@ -323,7 +336,10 @@ def receive_position():
     moove_piece(request[0][1],request[0][0],request[1][1],request[1][0])
     
     
-
+def evaluet():
+    global evaluation_black,evaluation_balck_rect
+    global evaluation_white,evaluation_white_rect
+    global white_advantage,black_advantage
 
 
 def get_legal_mouves(piece,start_row,start_col,turn,checking):
@@ -1484,6 +1500,7 @@ def spawn_board():
                 white=not white
         
         current_x=board_origin[0]
+        current_x=board_origin[0]
         current_y+=square_size
 def hovered_square():
     mouse_x,mouse_y=pygame.mouse.get_pos()
@@ -1507,6 +1524,8 @@ def render():
     screen.blit(black_bar,black_bar_rect)
     screen.blit(white_bar,white_bar_rect)
     white=True
+    screen.blit(evaluation_white,evaluation_white_rect)
+    screen.blit(evaluation_black,evaluation_balck_rect)
     for y in range(8):
         for x in range(8):
             
@@ -1668,7 +1687,7 @@ def draw_menue():
     screen.blit(play_online_text,play_online_rect)
     
     screen.blit(game_name,game_name_rect)
-screen.fill(BOARD_BG)
+
 can_play=False
 
 while True:
@@ -1745,7 +1764,7 @@ while True:
                     game_state="main_menue"
 
 
-
+    screen.fill((48,46,43))
 
     if   white_turn==assinged_turn and game_state=="playing_online":
         can_play=True
