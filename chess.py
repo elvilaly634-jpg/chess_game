@@ -132,19 +132,7 @@ text_width,tex_height=medium_italic_font_small.size("Play Online")
 online_rect=pygame.Rect(0,0,text_width+15,tex_height+8)
 text_width,tex_height=medium_italic_font_small.size("Play Offline")
 offline_rect=pygame.Rect(0,0,text_width+15,tex_height+8)
-white_percentage=2
-black_percentage=100-white_percentage
-white_advantage=(white_percentage/100)*(square_size*8)
-black_advantage=(black_percentage/100)*(square_size*8)
-evaluation_white=pygame.surface.Surface((board_origin[0],white_advantage))
-evaluation_white_rect=evaluation_white.get_rect(topleft=(0,board_origin[1]))
 
-evaluation_black=pygame.surface.Surface((board_origin[0],black_advantage))
-evaluation_balck_rect=evaluation_black.get_rect(topleft=(0,board_origin[1]+white_advantage))
-
-
-evaluation_white.fill((224,223,223))
-evaluation_black.fill((64,61,57))
 boards=[white_pawn_board, white_knight_board, white_bishop_board, white_rook_board, white_queen_board, white_king_board,
         black_pawn_board, black_knight_board, black_bishop_board, black_rook_board, black_queen_board, black_king_board]
 
@@ -156,8 +144,8 @@ advantage=0
 #ok let me lock in if we know that advantage has an enterval
 # nvm mind i'll just ask deepseek for the best idea
 #ok so the maximum value of advantage is 10 and the min is -10 
-buffer_val=(square_size*4)/10
-advantage=0
+buffer_val=(square_size*4)/20
+
 white_bar=pygame.surface.Surface((45,(square_size*4)+advantage*buffer_val))
 white_bar_rect=white_bar.get_rect(topleft=(20,board_origin[1]))
 white_bar.fill(white_bar_color)
@@ -337,10 +325,46 @@ def receive_position():
     
     
 def evaluet():
-    global evaluation_black,evaluation_balck_rect
-    global evaluation_white,evaluation_white_rect
-    global white_advantage,black_advantage
+    global advantage
 
+    queen_points=4
+    pawn_points=1
+    knight_points=2
+    bishop_points=2
+    rook_points=3
+
+    white_points=0
+    black_points=0
+    white_points+=(white_queen_board.bit_count())*queen_points
+    black_points-=(black_queen_board.bit_count())*queen_points
+
+    white_points+=(white_rook_board.bit_count())*rook_points
+    black_points-=(black_rook_board.bit_count())*rook_points
+
+    white_points+=(white_bishop_board.bit_count())*bishop_points
+    black_points-=(black_bishop_board.bit_count())*bishop_points
+
+    white_points+=(white_pawn_board.bit_count())*pawn_points
+    black_points-=(black_pawn_board.bit_count())*pawn_points
+
+    white_points+=(white_knight_board.bit_count())*knight_points
+    black_points-=(black_knight_board.bit_count())*knight_points
+
+    advantage=white_points+black_points
+
+    print(advantage)
+
+
+def update_bars():
+    global black_bar,black_bar_rect
+    global white_bar_rect,white_bar
+
+    white_bar=pygame.surface.Surface((45,(square_size*4)+advantage*buffer_val))
+    white_bar_rect=white_bar.get_rect(topleft=(20,board_origin[1]))
+    white_bar.fill(white_bar_color)
+    black_bar=pygame.surface.Surface((45,board_origin[1]+(square_size*8)-white_bar_rect.bottom))
+    black_bar_rect=black_bar.get_rect(topleft=(20,white_bar_rect.bottom))
+    black_bar.fill(black_bar_color)
 
 def get_legal_mouves(piece,start_row,start_col,turn,checking):
     global white_peaces_board,black_peaces_board
@@ -1314,6 +1338,8 @@ def moove_piece(start_row,start_col,end_row,end_col):
         white_peaces_board|=boards[i]
         black_peaces_board|=boards[i+6]
     if played:
+        evaluet()
+        update_bars()
         end_square=[end_col,end_row]
         
         snapshot={
@@ -1524,8 +1550,8 @@ def render():
     screen.blit(black_bar,black_bar_rect)
     screen.blit(white_bar,white_bar_rect)
     white=True
-    screen.blit(evaluation_white,evaluation_white_rect)
-    screen.blit(evaluation_black,evaluation_balck_rect)
+    screen.blit(white_bar,white_bar_rect)
+    
     for y in range(8):
         for x in range(8):
             
@@ -1706,6 +1732,8 @@ while True:
                     spawn_board()
                     spawn_peaces()
                     can_play=True
+                    evaluet()
+                    # update_bars()
                 elif online_rect.collidepoint(mouse_pos):
                     game_state="playing_online"
                     threading.Thread(target=chess_client.start).start()
@@ -1718,7 +1746,8 @@ while True:
                     waiting_for_pos=True
                     spawn_board()
                     spawn_peaces()
-
+                    evaluet()
+                    update_bars()
 
             
             if can_play:
