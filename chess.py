@@ -1,4 +1,4 @@
-﻿import pygame
+﻿import pygame,bot_chess
 from sys import exit
 import threading,chess_client
 import time,ast
@@ -400,7 +400,7 @@ def receive_position():
     
 def evaluet():
     global advantage
-
+    bot_chess.search()
     queen_points=4
     pawn_points=1
     knight_points=2
@@ -1112,6 +1112,7 @@ def update_boards(reverse):
     global white_queen_board,black_queen_board
     global white_king_board,black_king_board
     global white_rook_board,black_rook_board
+
     if not reverse:
         boards[0]=white_pawn_board
         boards[1]=white_knight_board
@@ -1828,153 +1829,154 @@ def draw_menue():
 
 can_play=False
 
-while True:
+if __name__ == "__main__":
+    while True:
     
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            pygame.quit()
-            exit()
-        if event.type == pygame.MOUSEBUTTONDOWN:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                exit()
+            if event.type == pygame.MOUSEBUTTONDOWN:
 
-            if game_state=="main_menue":
-                mouse_pos=pygame.mouse.get_pos()
+                if game_state=="main_menue":
+                    mouse_pos=pygame.mouse.get_pos()
                 
-                if offline_rect.collidepoint(mouse_pos):
-                    game_state="playing_offline"
-                    spawn_board()
-                    spawn_peaces()
-                    can_play=True
-                    evaluet()
-                    # update_bars()
-                elif online_rect.collidepoint(mouse_pos):
-                    game_state="playing_online"
-                    threading.Thread(target=chess_client.start).start()
-                    time.sleep(0.5)
-                    chess_client.send("ok")
-                    assinged_turn=chess_client.recv()
-                    assinged_turn=bool(int(assinged_turn))
+                    if offline_rect.collidepoint(mouse_pos):
+                        game_state="playing_offline"
+                        spawn_board()
+                        spawn_peaces()
+                        can_play=True
+                        evaluet()
+                        # update_bars()
+                    elif online_rect.collidepoint(mouse_pos):
+                        game_state="playing_online"
+                        threading.Thread(target=chess_client.start).start()
+                        time.sleep(0.5)
+                        chess_client.send("ok")
+                        assinged_turn=chess_client.recv()
+                        assinged_turn=bool(int(assinged_turn))
                     
-                    can_play=True
-                    waiting_for_pos=True
-                    spawn_board()
-                    spawn_peaces()
-                    evaluet()
-                    update_bars()
+                        can_play=True
+                        waiting_for_pos=True
+                        spawn_board()
+                        spawn_peaces()
+                        evaluet()
+                        update_bars()
 
             
-            if can_play:
-                if promoting:
-                    for ind,promote_rect in enumerate(promote_rects):
-                        if promote_rect.collidepoint(pygame.mouse.get_pos()):
-                            promote(not white_turn,promote_pieces[ind])
-                            promoting=False
-                elif event.button == 1 and ready and not shadow and not promoting and (game_state=="playing_offline" or game_state=="playing_online"): 
-                        row,col=hovered_square()
-                        ready=False
-                        if row is not None and col is not None:
-                            if white_turn:
-                                peaces=white_peaces_board
-                            else:peaces=black_peaces_board
-                            if starting :
-                                position=row*8+col
-                                if(get_piece_at(position) is not None) and peaces&(1<<position):
-                                    starting=False
-                                    start_row=row
-                                    start_col=col
-                                    end_square=[]
-                                    start_square=[start_col,start_row]
-                                    show_mouves(get_legal_mouves(get_piece_at(position)[0],start_row,start_col,white_turn,True))
+                if can_play:
+                    if promoting:
+                        for ind,promote_rect in enumerate(promote_rects):
+                            if promote_rect.collidepoint(pygame.mouse.get_pos()):
+                                promote(not white_turn,promote_pieces[ind])
+                                promoting=False
+                    elif event.button == 1 and ready and not shadow and not promoting and (game_state=="playing_offline" or game_state=="playing_online"): 
+                            row,col=hovered_square()
+                            ready=False
+                            if row is not None and col is not None:
+                                if white_turn:
+                                    peaces=white_peaces_board
+                                else:peaces=black_peaces_board
+                                if starting :
+                                    position=row*8+col
+                                    if(get_piece_at(position) is not None) and peaces&(1<<position):
+                                        starting=False
+                                        start_row=row
+                                        start_col=col
+                                        end_square=[]
+                                        start_square=[start_col,start_row]
+                                        show_mouves(get_legal_mouves(get_piece_at(position)[0],start_row,start_col,white_turn,True))
                                     
-                            else:
+                                else:
                                 
-                                starting=True
+                                    starting=True
                                 
-                                moove_piece(start_row,start_col,row,col)
-                                availble_taking_rects.clear()
-                                availble_mouves_rects.clear()
-        elif event.type == pygame.MOUSEBUTTONUP and (game_state=="playing_offline"or game_state=="playing_online"):
-            if event.button == 1 and not shadow:
-                ready=True
-        elif event.type==pygame.KEYDOWN :
-            if game_state=="playing_offline" or game_state=="playing_online" or game_state=="game_over":
-                if event.key==pygame.K_l:
-                    look(1)
-                elif event.key==pygame.K_j:
-                    look(-1)
-                elif event.key==pygame.K_ESCAPE:
-                    game_state="main_menue"
+                                    moove_piece(start_row,start_col,row,col)
+                                    availble_taking_rects.clear()
+                                    availble_mouves_rects.clear()
+            elif event.type == pygame.MOUSEBUTTONUP and (game_state=="playing_offline"or game_state=="playing_online"):
+                if event.button == 1 and not shadow:
+                    ready=True
+            elif event.type==pygame.KEYDOWN :
+                if game_state=="playing_offline" or game_state=="playing_online" or game_state=="game_over":
+                    if event.key==pygame.K_l:
+                        look(1)
+                    elif event.key==pygame.K_j:
+                        look(-1)
+                    elif event.key==pygame.K_ESCAPE:
+                        game_state="main_menue"
 
 
-    screen.fill((48,46,43))
+        screen.fill((48,46,43))
 
-    if   white_turn==assinged_turn and game_state=="playing_online":
-        can_play=True
-        waiting_for_pos=True
-    elif   white_turn!=assinged_turn and game_state=="playing_online":
-        can_play=False
-                
-                
-        if  waiting_for_pos:
-            
-            get_value=threading.Thread(target=receive_position)
-            get_value.daemon=True
-            get_value.start()
-            waiting_for_pos=False
-
-    if game_state=="playing_offline" or game_state=="playing_online":
-        row, col = hovered_square()
-        
-        screen.fill((48, 46, 43))
-        render()
-        # if white_turn:
-        #     text="White turn"
-        #     background.fill("black")
-        #     render_text=font.render(text,True,"white")
-        # else:
-        #     text="Black turn"
-        #     background.fill("white")
-        #     render_text=font.render(text,True,"black")
-        # screen.blit(render_text,(610,0))
-
-        if promoting:
-            promote_rects.clear()
-            backgroundd=pygame.surface.Surface((75*8,600))
-            backgroundd.fill("black")
-            backgroundd.set_alpha(150)
-            promote_text=font.render("Promote",True,"white")
-            promote_text_rect=promote_text.get_rect(center=((75*8)/2,300-100))
-            screen.blit(backgroundd,(0,0))
-            screen.blit(promote_text,promote_text_rect)
-            bishop=bishop_white if not white_turn else bishop_black
-            knight=knight_white if not white_turn else knight_black
-            queen=queen_white if not white_turn else queen_black
-            rook=rook_white if not white_turn else rook_black
-            bishop_rect=bishop.get_rect(topleft=(3*75,4*75))
-            knight_rect=knight.get_rect(topleft=(4*75,4*75))
-            queen_rect=queen.get_rect(topleft=(3*75,3*75))
-            rook_rect=rook.get_rect(topleft=(4*75,3*75))
-            promote_rects.append(bishop_rect)
-            promote_rects.append(knight_rect)
-            promote_rects.append(rook_rect)
-            promote_rects.append(queen_rect)
-            promote_pieces=["b","k","r","q"]
-            screen.blit(bishop,bishop_rect)
-            screen.blit(queen,queen_rect)
-            screen.blit(rook,rook_rect)
-            screen.blit(knight,knight_rect)
-        if checkmate:
-            game_over_text="Black won" if white_turn else "White won"
-            render_text=font.render(game_over_text,True,"black" if not white_turn else "white")
-            screen.blit(render_text,(75*8+20,75*4))
-            
-        elif stalemate:
-            game_over_text="stalemate" 
-            render_text=font.render(game_over_text,True,"black" if not white_turn else "white")
-            screen.blit(render_text,(75*8+20,75*4))
+        if   white_turn==assinged_turn and game_state=="playing_online":
+            can_play=True
+            waiting_for_pos=True
+        elif   white_turn!=assinged_turn and game_state=="playing_online":
             can_play=False
-    elif game_state=="main_menue":
-        draw_menue()
+                
+                
+            if  waiting_for_pos:
+            
+                get_value=threading.Thread(target=receive_position)
+                get_value.daemon=True
+                get_value.start()
+                waiting_for_pos=False
+
+        if game_state=="playing_offline" or game_state=="playing_online":
+            row, col = hovered_square()
+        
+            screen.fill((48, 46, 43))
+            render()
+            # if white_turn:
+            #     text="White turn"
+            #     background.fill("black")
+            #     render_text=font.render(text,True,"white")
+            # else:
+            #     text="Black turn"
+            #     background.fill("white")
+            #     render_text=font.render(text,True,"black")
+            # screen.blit(render_text,(610,0))
+
+            if promoting:
+                promote_rects.clear()
+                backgroundd=pygame.surface.Surface((75*8,600))
+                backgroundd.fill("black")
+                backgroundd.set_alpha(150)
+                promote_text=font.render("Promote",True,"white")
+                promote_text_rect=promote_text.get_rect(center=((75*8)/2,300-100))
+                screen.blit(backgroundd,(0,0))
+                screen.blit(promote_text,promote_text_rect)
+                bishop=bishop_white if not white_turn else bishop_black
+                knight=knight_white if not white_turn else knight_black
+                queen=queen_white if not white_turn else queen_black
+                rook=rook_white if not white_turn else rook_black
+                bishop_rect=bishop.get_rect(topleft=(3*75,4*75))
+                knight_rect=knight.get_rect(topleft=(4*75,4*75))
+                queen_rect=queen.get_rect(topleft=(3*75,3*75))
+                rook_rect=rook.get_rect(topleft=(4*75,3*75))
+                promote_rects.append(bishop_rect)
+                promote_rects.append(knight_rect)
+                promote_rects.append(rook_rect)
+                promote_rects.append(queen_rect)
+                promote_pieces=["b","k","r","q"]
+                screen.blit(bishop,bishop_rect)
+                screen.blit(queen,queen_rect)
+                screen.blit(rook,rook_rect)
+                screen.blit(knight,knight_rect)
+            if checkmate:
+                game_over_text="Black won" if white_turn else "White won"
+                render_text=font.render(game_over_text,True,"black" if not white_turn else "white")
+                screen.blit(render_text,(75*8+20,75*4))
+            
+            elif stalemate:
+                game_over_text="stalemate" 
+                render_text=font.render(game_over_text,True,"black" if not white_turn else "white")
+                screen.blit(render_text,(75*8+20,75*4))
+                can_play=False
+        elif game_state=="main_menue":
+            draw_menue()
     
-    pygame.display.update()
-    clock.tick(60)
+        pygame.display.update()
+        clock.tick(60)
 
