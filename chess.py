@@ -317,7 +317,7 @@ def receive_position():
     request[1][1]=7-request[1][1]
     request[0][0]=7-request[0][0]
     request[1][0]=7-request[1][0]
-    print(f"received mouve :{request}")
+    
     start_square=request[0]
     end_square=request[1]
     
@@ -352,7 +352,7 @@ def evaluet():
 
     advantage=white_points+black_points
 
-    print(advantage)
+    
 
 
 def update_bars():
@@ -891,7 +891,7 @@ def get_legal_mouves(piece,start_row,start_col,turn,checking):
                                 if turn:legal_mouve.append(king_castle_positions[2])
                                 else:legal_mouve.append(king_castle_positions[3])
 
-                print(legal_mouve)
+                
 
     if checking:
   
@@ -1145,7 +1145,7 @@ def moove_piece(start_row,start_col,end_row,end_col):
                     for_black_passent_board|=(1<<(end_row+val)*8+end_col)
                 elif not white_turn and end_row==7-ed_row and start_row==7-str_row:
                     gave_passent_white=True
-                    print(f"given: [{end_col},{end_row+val}]")
+                    
                     for_white_passent_board|=(1<<(end_row+val)*8+end_col)
                     en_passent_mouves_for_white.append([end_col,end_row+val])
                     
@@ -1208,9 +1208,7 @@ def moove_piece(start_row,start_col,end_row,end_col):
             legal_mouves=get_legal_mouves(piece,start_row,start_col,white_turn,True)
             
             row_col=[end_col,end_row]
-            print(f"king castle positions: {king_castle_positions}")
-            print(f"legal mouves: {legal_mouves}")
-            print(f"row_col: {row_col}")
+            
             if row_col in legal_mouves:
                 if row_col in king_castle_positions and not castledd and (not rook_rightt or not rook_leftt) and not king_mouvedd:
                     castle(start_col,start_row,end_row,end_col,white_turn)
@@ -1273,7 +1271,7 @@ def moove_piece(start_row,start_col,end_row,end_col):
     else:
         if for_white_passent_board&(1<<end_position):
             black_pawn_board&=~(1<<((end_row+val)*8+end_col))
-            print("should_take")
+            
             for_white_passent_board&=~(1<<end_position)
         white_castled=castledd
     update_boards(False)
@@ -1375,7 +1373,7 @@ def spawn_peaces():
     placement_row=6
     if game_state=="playing_online" and not assinged_turn:
         placement_row=1
-    print(placement_row)
+    
     for colu in range(8):
         
         position = placement_row * 8 + colu
@@ -1741,7 +1739,7 @@ while True:
                     chess_client.send("ok")
                     assinged_turn=chess_client.recv()
                     assinged_turn=bool(int(assinged_turn))
-                    print(assinged_turn)
+                    
                     can_play=True
                     waiting_for_pos=True
                     spawn_board()
@@ -1854,7 +1852,7 @@ while True:
             game_over_text="Black won" if white_turn else "White won"
             render_text=font.render(game_over_text,True,"black" if not white_turn else "white")
             screen.blit(render_text,(75*8+20,75*4))
-            print("black won" if white_turn else "white won")
+            
         elif stalemate:
             game_over_text="stalemate" 
             render_text=font.render(game_over_text,True,"black" if not white_turn else "white")
