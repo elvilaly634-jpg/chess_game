@@ -217,7 +217,7 @@ advantage=0
 #ok let me lock in if we know that advantage has an enterval
 # nvm mind i'll just ask deepseek for the best idea
 #ok so the maximum value of advantage is 10 and the min is -10 
-max_val=25
+max_val=20
 buffer_val=(square_size*4)/max_val
 
 white_bar=pygame.surface.Surface((45,(square_size*4)+advantage*buffer_val))
@@ -424,9 +424,44 @@ def evaluet():
     white_points+=(white_knight_board.bit_count())*knight_points
     black_points-=(black_knight_board.bit_count())*knight_points
 
+    for pos in range(64):
+        for index,board in enumerate(boards):
+            if board&(1<<pos):
+                pos_row=pos//8
+                pos_col=pos%8
+                if index==0 :
+                    white_points+=PAWN_TABLE[7-pos_row][pos_col]
+                elif index==6:
+                    black_points-=PAWN_TABLE[pos_row][pos_col]
+
+                elif index==1 :
+                    white_points+=KNIGHT_TABLE[7-pos_row][pos_col]
+                elif index==7:
+                    black_points-=KNIGHT_TABLE[pos_row][pos_col]
 
 
-    
+                elif index==2 :
+                    white_points+=BISHOP_TABLE[7-pos_row][pos_col]
+                elif index==8:
+                    black_points-=BISHOP_TABLE[pos_row][pos_col]
+
+
+                elif index==3 :
+                    white_points+=ROOK_TABLE[7-pos_row][pos_col]
+                elif index==9:
+                    black_points-=ROOK_TABLE[pos_row][pos_col]
+
+                elif index==4 :
+                    white_points+=QUEEN_TABLE[7-pos_row][pos_col]
+                elif index==10:
+                    black_points-=QUEEN_TABLE[pos_row][pos_col]
+
+                elif index==5 :
+                    white_points+=KING_TABLE[7-pos_row][pos_col]
+                elif index==11:
+                    black_points-=KING_TABLE[pos_row][pos_col]
+
+
     old_advantage=advantage
     advantage=white_points+black_points
     if -1*max_val<advantage<max_val:return
