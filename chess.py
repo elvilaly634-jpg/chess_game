@@ -3,7 +3,9 @@ from sys import exit
 import threading,chess_client
 import time,ast
 pygame.init()
-screen = pygame.display.set_mode((800, 600))
+WINDOW_HEIGHT=650
+WINDOW_WIDTH=850
+screen = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT))
 clock = pygame.time.Clock()
 
 pygame.display.set_caption("CHESSSSSSSSSSSSSSSSSS!!!!!!!!!!!!!!!!!")
@@ -13,7 +15,7 @@ italic_path="Bodoni_Moda\\italic.ttf"
 normal_path="Bodoni_Moda\\normal.ttf"
 half_italic_path="Bodoni_Moda\\half.ttf"
 medium_italic_path="Bodoni_Moda\\medium_italic.ttf"
-board_origin=(0,0)
+board_origin=[85,20]
 square_size=75
 stalemate=False
 LIGHT_SQUARE = (237, 240, 209)
@@ -65,7 +67,8 @@ small_font=pygame.font.Font(None,25)
 half_italic_font_big=pygame.font.Font(half_italic_path,90)
 half_italic_font_medium=pygame.font.Font(half_italic_path,40)
 half_italic_font_small=pygame.font.Font(half_italic_path,30)
-
+black_bar_color=(64, 61, 57)
+white_bar_color=(255, 255, 255)
 medium_italic_font_big=pygame.font.Font(medium_italic_path,90)
 medium_italic_font_medium=pygame.font.Font(medium_italic_path,40)
 medium_italic_font_small=pygame.font.Font(medium_italic_path,30)
@@ -131,6 +134,23 @@ text_width,tex_height=medium_italic_font_small.size("Play Offline")
 offline_rect=pygame.Rect(0,0,text_width+15,tex_height+8)
 boards=[white_pawn_board, white_knight_board, white_bishop_board, white_rook_board, white_queen_board, white_king_board,
         black_pawn_board, black_knight_board, black_bishop_board, black_rook_board, black_queen_board, black_king_board]
+
+
+advantage=0
+# now this is a hard one and i want to make it in a smart way let's say that the evaluation bar's of white and black should be equal to square_size*8
+# and we just draw the white bar from a know position wish is board origin[0] and we draw it based on advantage if it is positive it is in the favor of white else in black
+# but the way how we get the value of advantage is hard because i don't know how
+#ok let me lock in if we know that advantage has an enterval
+# nvm mind i'll just ask deepseek for the best idea
+#ok so the maximum value of advantage is 10 and the min is -10 
+buffer_val=(square_size*4)/10
+advantage=0
+white_bar=pygame.surface.Surface((45,(square_size*4)+advantage*buffer_val))
+white_bar_rect=white_bar.get_rect(topleft=(20,board_origin[1]))
+white_bar.fill(white_bar_color)
+black_bar=pygame.surface.Surface((45,board_origin[1]+(square_size*8)-white_bar_rect.bottom))
+black_bar_rect=black_bar.get_rect(topleft=(20,white_bar_rect.bottom))
+black_bar.fill(black_bar_color)
 def get_piece_index(square_index):
     bit = 1 << square_index
     
@@ -1463,13 +1483,17 @@ def spawn_board():
             if x==8:
                 white=not white
         
-        current_x=0
+        current_x=board_origin[0]
         current_y+=square_size
 def hovered_square():
     mouse_x,mouse_y=pygame.mouse.get_pos()
 
-    col=mouse_x//(75)
-    row=mouse_y//(75)
+    col=(mouse_x//(square_size))
+    row=mouse_y//(square_size)
+    if board_origin[0]!=0:
+        col-=board_origin[0]//square_size
+    if board_origin[1]!=0:
+        row-=board_origin[1]//square_size
     pos=row*8+col
     if get_piece_at(pos)!=(None,None):
         pygame.mouse.set_cursor(pygame.SYSTEM_CURSOR_HAND)
@@ -1478,7 +1502,10 @@ def hovered_square():
     return None,None
 
 def render():
+    
     global start_square,end_square
+    screen.blit(black_bar,black_bar_rect)
+    screen.blit(white_bar,white_bar_rect)
     white=True
     for y in range(8):
         for x in range(8):
@@ -1528,7 +1555,7 @@ def render():
                 text_color=LIGHT_SQUARE
             white=not white
             letter=small_font.render(letters[i],True,text_color)
-            letter_rect=letter.get_rect(center=(68+75*i,75*8-10))
+            letter_rect=letter.get_rect(center=(board_origin[0]+68+square_size*i , board_origin[1]+ square_size*8-10))
             screen.blit(letter,letter_rect)
         white=False
         for i in range(7,-1,-1):
@@ -1536,7 +1563,7 @@ def render():
             else:text_color=LIGHT_SQUARE
             white=not white
             number=small_font.render(f"{8-i}",True,text_color)
-            number_rect=number.get_rect(center=(5,75*i+10))
+            number_rect=number.get_rect(center=(5+board_origin[0],board_origin[1]+ square_size*i+10))
             screen.blit(number,number_rect)
     elif game_state=="playing_online" and not assinged_turn:
         for i in range(8):
@@ -1547,7 +1574,7 @@ def render():
                 text_color=LIGHT_SQUARE
             white=not white
             letter=small_font.render(letters[7-i],True,text_color)
-            letter_rect=letter.get_rect(center=(68+75*i,75*8-10))
+            letter_rect=letter.get_rect(center=(board_origin[0]+68+square_size*i,board_origin[1]+ square_size*8-10))
             screen.blit(letter,letter_rect)
         white=False
         for i in range(7,-1,-1):
@@ -1555,7 +1582,7 @@ def render():
             else:text_color=LIGHT_SQUARE
             white=not white
             number=small_font.render(f"{i+1}",True,text_color)
-            number_rect=number.get_rect(center=(5,75*i+10))
+            number_rect=number.get_rect(center=(5+board_origin[0],board_origin[1]+square_size*i+10))
             screen.blit(number,number_rect)
 
     for board in boards:
@@ -1565,36 +1592,36 @@ def render():
                 column= pos%8
                 rowe=pos//8
                 if board==boards[0]:
-                    screen.blit(pawn_white, (square_size * column, square_size * rowe))
+                    screen.blit(pawn_white, (board_origin[0]+ (square_size * column), board_origin[1]+(square_size * rowe)))
                 elif board==boards[1]:
-                    screen.blit(knight_white, (square_size * column, square_size * rowe))
+                    screen.blit(knight_white, (board_origin[0]+ (square_size * column), board_origin[1]+(square_size * rowe)))
                 elif board==boards[2]:
-                    screen.blit(bishop_white, (square_size * column, square_size * rowe))
+                    screen.blit(bishop_white, (board_origin[0]+ (square_size * column), board_origin[1]+(square_size * rowe)))
                 elif board==boards[3]:
-                    screen.blit(rook_white, (square_size * column, square_size * rowe))
+                    screen.blit(rook_white, (board_origin[0]+ (square_size * column), board_origin[1]+(square_size * rowe)))
                 elif board==boards[4]:
-                    screen.blit(queen_white, (square_size * column, square_size * rowe))
+                    screen.blit(queen_white, (board_origin[0]+ (square_size * column), board_origin[1]+(square_size * rowe)))
                 elif board==boards[5]:
-                    screen.blit(king_white, (square_size * column, square_size * rowe))
+                    screen.blit(king_white, (board_origin[0]+ (square_size * column), board_origin[1]+(square_size * rowe)))
                 elif board==boards[6]:
-                    screen.blit(pawn_black, (square_size * column, square_size * rowe))
+                    screen.blit(pawn_black, (board_origin[0]+ (square_size * column), board_origin[1]+(square_size * rowe)))
                 elif board==boards[7]:
-                    screen.blit(knight_black, (square_size * column, square_size * rowe))
+                    screen.blit(knight_black, (board_origin[0]+ (square_size * column), board_origin[1]+(square_size * rowe)))
                 elif board==boards[8]:
-                    screen.blit(bishop_black, (square_size * column, square_size * rowe))
+                    screen.blit(bishop_black,(board_origin[0]+ (square_size * column), board_origin[1]+(square_size * rowe)))
                 elif board==boards[9]:
-                    screen.blit(rook_black, (square_size * column, square_size * rowe))
+                    screen.blit(rook_black, (board_origin[0]+ (square_size * column), board_origin[1]+(square_size * rowe)))
                 elif board==boards[10]:
-                    screen.blit(queen_black, (square_size * column, square_size * rowe))
+                    screen.blit(queen_black, (board_origin[0]+ (square_size * column), board_origin[1]+(square_size * rowe)))
                 elif board==boards[11]:
-                    screen.blit(king_black, (square_size * column, square_size * rowe))
+                    screen.blit(king_black, (board_origin[0]+ (square_size * column), board_origin[1]+(square_size * rowe)))
 
     if len(availble_mouves_rects)!=0:
         for rect in availble_mouves_rects:
-            pygame.draw.circle(screen,(191, 191, 191),(75/2+rect[0]*75,75/2+rect[1]*75),19,25)
+            pygame.draw.circle(screen,(191, 191, 191),(board_origin[0]+(square_size/2+rect[0]*square_size), board_origin[1]+(square_size/2+rect[1]*square_size)),19,25)
     if len(availble_taking_rects)!=0:
         for rect in availble_taking_rects:
-            pygame.draw.circle(screen,(225, 165, 165),(75/2+rect[0]*75,75/2+rect[1]*75),75/2,8)
+            pygame.draw.circle(screen,(225, 165, 165),(board_origin[0]+(square_size/2+rect[0]*square_size),board_origin[1]+(square_size/2+rect[1]*square_size)),square_size/2,8)
     
 def draw_menue():
     global online_rect,offline_rect
@@ -1604,25 +1631,25 @@ def draw_menue():
     color=NORMAL_STATE
     screen.fill((140,107,79))
     game_name=half_italic_font_big.render("Chess",True,(215,207,191))
-    game_name_rect=game_name.get_rect(center=(400,150))
+    game_name_rect=game_name.get_rect(center=(WINDOW_WIDTH/2,WINDOW_HEIGHT/4))
 
     
     text_width,tex_height=medium_italic_font_small.size("Play Online")
     online_rect=pygame.Rect(0,0,text_width+15,tex_height+8)
     
-    online_rect.center=(400,255)
+    online_rect.center=(WINDOW_WIDTH/2,WINDOW_HEIGHT/2)
     
     play_online_text=medium_italic_font_small.render("Play Online",True,(215,207,191))
-    play_online_rect=play_online_text.get_rect(center=(400,255))
+    play_online_rect=play_online_text.get_rect(center=(WINDOW_WIDTH/2,WINDOW_HEIGHT/2))
 
     
 
     offline_rect=pygame.Rect(0,0,text_width+15,tex_height+8)
     
-    offline_rect.center=(400,325)
+    offline_rect.center=(WINDOW_WIDTH/2,(WINDOW_HEIGHT/2)+75)
     
     play_offline_text=medium_italic_font_small.render("Play Offline",True,(215,207,191))
-    play_offline_rect=play_offline_text.get_rect(center=(400,325))
+    play_offline_rect=play_offline_text.get_rect(center=(WINDOW_WIDTH/2,75+(WINDOW_HEIGHT/2)))
     
     
 
@@ -1737,17 +1764,17 @@ while True:
     if game_state=="playing_offline" or game_state=="playing_online":
         row, col = hovered_square()
         
-        screen.blit(background,(0,0))
+        screen.fill((48, 46, 43))
         render()
-        if white_turn:
-            text="White turn"
-            background.fill("black")
-            render_text=font.render(text,True,"white")
-        else:
-            text="Black turn"
-            background.fill("white")
-            render_text=font.render(text,True,"black")
-        screen.blit(render_text,(610,0))
+        # if white_turn:
+        #     text="White turn"
+        #     background.fill("black")
+        #     render_text=font.render(text,True,"white")
+        # else:
+        #     text="Black turn"
+        #     background.fill("white")
+        #     render_text=font.render(text,True,"black")
+        # screen.blit(render_text,(610,0))
 
         if promoting:
             promote_rects.clear()
