@@ -144,7 +144,8 @@ advantage=0
 #ok let me lock in if we know that advantage has an enterval
 # nvm mind i'll just ask deepseek for the best idea
 #ok so the maximum value of advantage is 10 and the min is -10 
-buffer_val=(square_size*4)/20
+max_val=25
+buffer_val=(square_size*4)/max_val
 
 white_bar=pygame.surface.Surface((45,(square_size*4)+advantage*buffer_val))
 white_bar_rect=white_bar.get_rect(topleft=(20,board_origin[1]))
@@ -350,8 +351,10 @@ def evaluet():
     white_points+=(white_knight_board.bit_count())*knight_points
     black_points-=(black_knight_board.bit_count())*knight_points
 
+    old_advantage=advantage
     advantage=white_points+black_points
-
+    if -1*max_val<advantage<max_val:return
+    else:advantage=old_advantage
     
 
 
