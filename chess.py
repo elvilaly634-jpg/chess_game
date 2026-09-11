@@ -398,9 +398,9 @@ def receive_position():
     moove_piece(request[0][1],request[0][0],request[1][1],request[1][0])
     
     
-def evaluet():
+def evaluet(peaces_board):
     global advantage
-    bot_chess.search()
+    
     queen_points=4
     pawn_points=1
     knight_points=2
@@ -425,7 +425,7 @@ def evaluet():
     black_points-=(black_knight_board.bit_count())*knight_points
 
     for pos in range(64):
-        for index,board in enumerate(boards):
+        for index,board in enumerate(peaces_board):
             if board&(1<<pos):
                 pos_row=pos//8
                 pos_col=pos%8
@@ -464,16 +464,19 @@ def evaluet():
 
     old_advantage=advantage
     advantage=white_points+black_points
-    if -1*max_val<advantage<max_val:return
-    else:advantage=old_advantage
+    if -1*max_val<advantage<max_val:
+        return advantage
+    else:
+        advantage=old_advantage
+        return old_advantage
     
 
 
-def update_bars():
+def update_bars(adv):
     global black_bar,black_bar_rect
     global white_bar_rect,white_bar
 
-    white_bar=pygame.surface.Surface((45,(square_size*4)+advantage*buffer_val))
+    white_bar=pygame.surface.Surface((45,(square_size*4)+adv*buffer_val))
     white_bar_rect=white_bar.get_rect(topleft=(20,board_origin[1]))
     white_bar.fill(white_bar_color)
     black_bar=pygame.surface.Surface((45,board_origin[1]+(square_size*8)-white_bar_rect.bottom))
@@ -1451,8 +1454,8 @@ def moove_piece(start_row,start_col,end_row,end_col):
         white_peaces_board|=boards[i]
         black_peaces_board|=boards[i+6]
     if played:
-        evaluet()
-        update_bars()
+        
+        update_bars(evaluet(boards))
         end_square=[end_col,end_row]
         
         snapshot={
@@ -1846,8 +1849,8 @@ if __name__ == "__main__":
                         spawn_board()
                         spawn_peaces()
                         can_play=True
-                        evaluet()
-                        # update_bars()
+                        
+                        update_bars(evaluet(boards))
                     elif online_rect.collidepoint(mouse_pos):
                         game_state="playing_online"
                         threading.Thread(target=chess_client.start).start()
@@ -1860,8 +1863,8 @@ if __name__ == "__main__":
                         waiting_for_pos=True
                         spawn_board()
                         spawn_peaces()
-                        evaluet()
-                        update_bars()
+                        
+                        update_bars(evaluet(boards))
 
             
                 if can_play:
