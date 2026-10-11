@@ -227,8 +227,9 @@ black_bar=pygame.surface.Surface((45,board_origin[1]+(square_size*8)-white_bar_r
 black_bar_rect=black_bar.get_rect(topleft=(20,white_bar_rect.bottom))
 black_bar.fill(black_bar_color)
 def get_piece_index(square_index):
-    bit = 1 << square_index
-    
+    try:
+        bit = 1 << square_index
+    except:return None
     
     if boards[0] & bit:   return 0
     elif boards[6]& bit:   return 6
@@ -250,7 +251,7 @@ def get_piece_index(square_index):
 def get_piece_at(square_index):
     try:
         bit = 1 << square_index
-    except:return(None,None)
+    except:return [None,None]
     
     if boards[0] & bit:   return ["p",0]
     elif boards[6]& bit:   return ["p",1]
@@ -1457,7 +1458,7 @@ def moove_piece(start_row,start_col,end_row,end_col):
         
         update_bars(evaluet(boards))
         end_square=[end_col,end_row]
-        
+        bot_chess.search(1,not white_turn,boards)
         snapshot={
             "turn":white_turn,
             "boards":boards[:],
@@ -1910,7 +1911,7 @@ if __name__ == "__main__":
                         game_state="main_menue"
 
 
-        screen.fill((48,46,43))
+       
 
         if   white_turn==assinged_turn and game_state=="playing_online":
             can_play=True
